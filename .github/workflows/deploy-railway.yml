@@ -1,0 +1,21 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Railway Deploy
+        uses: railwayapp/railway-action@v1
+        with:
+          railwayToken: ${{ secrets.RAILWAY_TOKEN }}
+          projectId: ${{ secrets.RAILWAY_PROJECT_ID }}
+          environment: production

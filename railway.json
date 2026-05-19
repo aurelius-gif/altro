@@ -1,0 +1,13 @@
+{
+  "projectId": "YOUR_RAILWAY_PROJECT_ID",
+  "production": {
+    "services": [
+      {
+        "name": "altro-speak",
+        "type": "docker",
+        "dockerfilePath": "Dockerfile",
+        "startCommand": "python -m moshi.server --host 0.0.0.0 --port 8998 --static speak/client/dist"
+      }
+    ]
+  }
+}

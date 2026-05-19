@@ -47,6 +47,19 @@ Railway can deploy this repository using the provided `Dockerfile`.
 - Optionally set `DEVICE=cuda` if your Railway environment has GPU support; otherwise keep `DEVICE=cpu`
 - Railway will build the `Dockerfile` and expose the app on port `8998`
 
+### GitHub Actions deploy
+
+This repo includes a GitHub Actions workflow at `.github/workflows/deploy-railway.yml`.
+
+Set the following repository secrets before pushing:
+
+- `RAILWAY_TOKEN`
+- `RAILWAY_PROJECT_ID`
+
+### Submodule note
+
+Because `speak` is a git submodule, make sure the `aurelius-gif/speak` repository receives the internal UI commit before relying on the `altro` deployment.
+
 ## Notes
 
 - The UI is served directly by the PersonaPlex server from the built `speak/client/dist` directory.
