@@ -1,0 +1,3 @@
+[submodule "speak"]
+	path = speak
+	url = https://github.com/aurelius-gif/speak.git

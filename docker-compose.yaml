@@ -1,0 +1,10 @@
+version: '3.9'
+services:
+  altro-speak:
+    build: .
+    ports:
+      - "8998:8998"
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - DEVICE=${DEVICE:-cpu}
+    restart: unless-stopped

@@ -1,0 +1,18 @@
+# speak.ai configuration for push-to-talk interface
+# Adjust these values to match the actual speak server and PTT endpoint.
+
+interface:
+  name: speak.ai
+  type: ptt
+  enabled: true
+
+speak:
+  submodule_path: speak
+  server_url: http://localhost:8998
+  api_path: /api
+
+ptt:
+  input_device: default
+  hold_to_talk: true
+  activation_key: F1
+  stream_mode: full_duplex
