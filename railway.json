@@ -1,13 +1,25 @@
 {
-  "projectId": "YOUR_RAILWAY_PROJECT_ID",
-  "production": {
-    "services": [
+  "$schema": "https://railway.app/schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfile": "Dockerfile"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "sleepApplication": false,
+    "restartPolicyMaxRetries": 0,
+    "ports": [
       {
-        "name": "altro-speak",
-        "type": "docker",
-        "dockerfilePath": "Dockerfile",
-        "startCommand": "python -m moshi.server --host 0.0.0.0 --port 8998 --static speak/client/dist"
+        "startPort": 8998,
+        "endPort": 8998
       }
     ]
+  },
+  "env": {
+    "DOPPLER_PROJECT": "altro",
+    "DOPPLER_CONFIG": "prd",
+    "PYTHONUNBUFFERED": "1",
+    "NO_TORCH_COMPILE": "1"
   }
 }
+

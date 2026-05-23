@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""
+Safe `c` CLI wrapper to call Anthropic/Claude API with local content-safety checks.
+Usage:
+  tools/c "Your prompt here"
+  echo "Your prompt" | tools/c
+
+Environment:
+  ANTHROPIC_API_KEY   Optional: if set the CLI will call the API; otherwise runs in dry-run mode.
+
+This tool intentionally blocks harmful/jailbreak prompts and logs requests to `tools/calls.log`.
+"""
+
+import argparse
+import os
+import re
+import sys
+import json
+from typing import Tuple
+
+DENY_PATTERNS = [
+    r"\bkill\b",
+    r"\bterrorist\b",
+    r"\bbomb\b",
+    r"\bweapon\b",
+    r"\bpoison\b",
+    r"\bassassin\b",
+    r"\bhack\b",
+    r"\bexploit\b",
+    r"\bsql injection\b",
+    r"\bpassword\b",
+    r"\bcredit card\b",
+    r"\bdo not detect|jailbreak|bypass|ignore instructions|override safety|unfiltered\b",
+    r"\bchild sexual|sexual content with minors\b",
+]
+
+LOG_PATH = os.path.join(os.path.dirname(__file__), "calls.log")
+
+
+def safe_check(prompt: str) -> Tuple[bool, str]:
+    p = prompt.lower()
+    for patt in DENY_PATTERNS:
+        if re.search(patt, p):
+            return False, f"Prompt rejected by safety rule: /{patt}/"
+    if len(prompt.strip()) == 0:
+        return False, "Empty prompt"
+    return True, ""
+
+
+def call_anthropic(prompt: str, api_key: str, model: str) -> str:
+    import requests
+    url = "https://api.anthropic.com/v1/complete"
+    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "max_tokens_to_sample": 1000,
+        "temperature": 0.7,
+    }
+    r = requests.post(url, headers=headers, json=payload, timeout=60)
+    r.raise_for_status()
+    j = r.json()
+    # Try common keys
+    if 'completion' in j:
+        return j['completion']
+    if 'output' in j:
+        return j['output']
+    # Fallback
+    return json.dumps(j, indent=2)
+
+
+def log_call(prompt: str, allowed: bool, result_summary: str) -> None:
+    try:
+        with open(LOG_PATH, 'a') as f:
+            f.write(json.dumps({
+                'prompt': prompt[:200],
+                'allowed': allowed,
+                'result': result_summary,
+            }) + "\n")
+    except Exception:
+        pass
+
+
+def main():
+    parser = argparse.ArgumentParser(prog='c', description='Safe Claude CLI wrapper')
+    parser.add_argument('prompt', nargs='*', help='Prompt text (or use stdin)')
+    parser.add_argument('--dry-run', action='store_true', help='Do not call the remote API')
+    parser.add_argument('--model', default='claude-2', help='Model name (for remote API)')
+    args = parser.parse_args()
+
+    if args.prompt:
+        prompt = ' '.join(args.prompt)
+    else:
+        prompt = sys.stdin.read()
+
+    allowed, reason = safe_check(prompt)
+    if not allowed:
+        print(f"Refused: {reason}")
+        log_call(prompt, False, reason)
+        sys.exit(2)
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if args.dry_run or not api_key:
+        print("[DRY RUN] Prompt passed safety checks. Set ANTHROPIC_API_KEY to actually call the API.")
+        print(prompt)
+        log_call(prompt, True, 'dry-run')
+        return
+
+    try:
+        out = call_anthropic(prompt, api_key, args.model)
+        print(out)
+        log_call(prompt, True, out[:200])
+    except Exception as e:
+        print(f"API call failed: {e}")
+        log_call(prompt, True, f"error: {e}")
+        sys.exit(3)
+
+
+if __name__ == '__main__':
+    main()

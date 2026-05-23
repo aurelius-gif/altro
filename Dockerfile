@@ -14,10 +14,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopus-dev \
     portaudio19-dev \
     build-essential \
+    curl \
   && rm -rf /var/lib/apt/lists/*
+
+# Install Doppler CLI
+RUN curl -sLf https://cli.doppler.com/install.sh | sh
+
 WORKDIR /app
 COPY --from=client-build /build/speak /app/speak
+COPY speak/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 ENV PYTHONUNBUFFERED=1
 RUN cd /app/speak/moshi && pip install --no-cache-dir -e .
 EXPOSE 8998
-CMD ["python", "-m", "moshi.server", "--host", "0.0.0.0", "--port", "8998", "--static", "speak/client/dist"]
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD []
